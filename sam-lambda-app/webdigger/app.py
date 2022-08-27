@@ -12,7 +12,7 @@ from math import ceil
 import urllib.request
 import json
 
-
+# Credits -  https://www.youtube.com/watch?v=Xajg_kvdA0c&list=PLC5qe4rQ-j1h-DktBYkeJto7rsEZAfTMl
 def lambda_handler(event, context):
     # ----------------------------------web driver setup---------------------------------------------------
     # path to chromedriver. while testing locally, 'var/task/' is the temporary path where files and dependencies of the function are mounted.
