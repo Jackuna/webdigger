@@ -9,10 +9,11 @@ import json
 import os
 import csv
 from math import ceil
-import urllib.request
 import json
+import boto3
 
 # Credits -  https://www.youtube.com/watch?v=Xajg_kvdA0c&list=PLC5qe4rQ-j1h-DktBYkeJto7rsEZAfTMl
+
 def lambda_handler(event, context):
     # ----------------------------------web driver setup---------------------------------------------------
     # path to chromedriver. while testing locally, 'var/task/' is the temporary path where files and dependencies of the function are mounted.
@@ -54,6 +55,10 @@ def lambda_handler(event, context):
 
     def load_chanel_list(filename):
         global channel_data
+        global driver_dir
+
+        driver_dir="/tmp/data/"
+        os.mkdir("/tmp/data")
 
         with open(filename, "r") as f:
             channel_data = json.load(f)
@@ -61,7 +66,7 @@ def lambda_handler(event, context):
 
     def scrapper():
 
-        driver_dir="/tmp/"
+        
         for val in channel_data.keys():
 
             youtube_pages = channel_data[val]['link']
@@ -122,8 +127,42 @@ def lambda_handler(event, context):
         driver.close()
         # close the driver
 
-    def uploda_to_s3():
-        pass
+    def upload_file_to_s3(local_filename, s3_bucket_name, s3_filename):
+        
+        s3 = boto3.client('s3')
 
+        '''
+        Function is meant to upload locally downloaded files to s3 bucket.
+        # Reference
+        # https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11
+        # https://stackoverflow.com/questions/34303775/complete-a-multipart-upload-with-boto3
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html
+        '''
+
+        try:
+            print("Uploading file: {}".format(local_filename))
+
+            tc = boto3.s3.transfer.TransferConfig()
+            t = boto3.s3.transfer.S3Transfer(client=s3, config=tc)
+
+            t.upload_file(local_filename, s3_bucket_name, s3_filename)
+
+        except Exception as fileUploadtoS3error:
+            print("Error uploading: {}".format(fileUploadtoS3error))
+
+    
+    def print_data():
+        '''
+        This function can be used to get a list of items in current working directory
+        # Debugging function, not called within script.
+        '''
+        os.chdir(driver_dir)
+        get_list = os.listdir()
+        for file in get_list:
+            print(file)
+            upload_file_to_s3(file, "9-bucket", file)
+    
     load_chanel_list("channel_list.json")
     scrapper()
+    print_data()
+
