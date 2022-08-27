@@ -1,5 +1,7 @@
 # Created by https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
 ### Linux ###
+webdigger/chromedriver
+webdigger/headless-chromium
 *~
 
 # temporary files which can be created if a process still has a handle open of a deleted file
