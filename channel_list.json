@@ -1,0 +1,30 @@
+{
+  "IndiaTV": {
+    "link": "https://www.youtube.com/c/IndiaTV/videos",
+    "fname": "IndiaTV_channel_data.csv"
+  },
+  "ndtv": {
+    "link": "https://www.youtube.com/user/ndtvindia/videos",
+    "fname": "ndtv_channel_data.csv"
+  },
+  "abp": {
+    "link": "https://www.youtube.com/c/abpnews/videos",
+    "fname": "abp_channel_data.csv"
+  },
+  "aajtak": {
+    "link": "https://www.youtube.com/c/aajtak/videos",
+    "fname": "aajtak_channel_data.csv"
+  },
+  "tnow": {
+    "link": "https://www.youtube.com/c/timesnownavbharat/videos",
+    "fname": "tnow_channel_data.csv"
+  },
+  "news18India": {
+    "link": "https://www.youtube.com/c/news18India/videos",
+    "fname": "news18India_channel_data.csv"
+  },
+  "RepublicTVBharat": {
+    "link": "https://www.youtube.com/c/RepublicTVBharat/videos",
+    "fname": "RepublicTVBharat_channel_data.csv"
+  }
+}
