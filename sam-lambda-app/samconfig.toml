@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "webdigger-lambda-fun-stack"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1fh26mio7s3f7"
+s3_prefix = "webdigger-lambda-stack"
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
