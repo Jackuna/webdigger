@@ -20,6 +20,11 @@ def lambda_handler(event, context):
     
     def initialize_driver():
 
+        '''
+        Initialize headless chromium with selenium chorome driver.
+        No argument required for now.
+        '''
+
         global driver
 
         # ----------------------------------web driver setup---------------------------------------------------
@@ -57,35 +62,76 @@ def lambda_handler(event, context):
 
         print("driver initialized successfully..")
 
-    # ----------------------------------web driver setup done----------------------------------------------------
-
         return driver
 
-    def initiale_data(filename):
+    # ----------------------------------web driver setup done----------------------------------------------------
 
-        global channel_data
+
+    def initiliaze_data(filename):
+
+        '''
+        Function initialize the prerequisites data.
+        '''
+
+        global url_dict_data
         global data_dir
         global today
+        global s3_upload_mock
 
         dt = datetime.now()
         today = dt.strftime('%m%d%y')
         print(len(event.keys()))
         data_dir="/tmp/data/"
+        s3_upload_mock = True
 
         os.mkdir(data_dir)
 
         with open(filename, "r") as f:
-            channel_data = json.load(f)
-            return channel_data
+            url_dict_data = json.load(f)
+            return url_dict_data
 
-    def scrapper():
+    # ---------------------------------- initiliaze_data function ends here ---------------------------------------
 
-
+    
+    def upload_file_to_s3(local_filename, s3_bucket_name, s3_filename,mock):
         
-        for val in channel_data.keys():
+        s3 = boto3.client('s3')
 
-            youtube_page = channel_data[val]['link']
-            channel_name = channel_data[val]['link'].split('/')[4].lower()
+        '''
+        Function is meant to upload locally downloaded files to s3 bucket.
+        # Reference
+        # https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11
+        # https://stackoverflow.com/questions/34303775/complete-a-multipart-upload-with-boto3
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html
+        '''
+        if mock==False:
+            try:
+                print("Uploading file: {}".format(local_filename))
+
+                tc = boto3.s3.transfer.TransferConfig()
+                t = boto3.s3.transfer.S3Transfer(client=s3, config=tc)
+
+                t.upload_file(local_filename, s3_bucket_name, s3_filename)
+
+            except Exception as fileUploadtoS3error:
+                print("Error uploading: {}".format(fileUploadtoS3error))
+        else:
+            print("Uploading file: {}".format(local_filename))
+
+    # ---------------------------------- upload_file_to_s3 function ends here ---------------------------------------
+
+
+    def yt_channel_scrapper(channel_url, s3_mock_status):
+
+        '''
+        Scrap the youtube channel video posts titles and uploads it into s3 bucket.
+        channel_url = dictionary value of channel by channel name.
+        '''
+        
+        for val in channel_url.keys():
+
+            youtube_page = channel_url[val]['link']
+            channel_name = channel_url[val]['link'].split('/')[4].lower()
             file_name = "report_{}_{}_data.csv".format(today,channel_name)
             file_name_with_dir = "{}{}".format(data_dir,file_name)
 
@@ -100,7 +146,7 @@ def lambda_handler(event, context):
             driver.get(youtube_page)
             time.sleep(2)
 
-            print("Scrapting data for :", youtube_page)
+            print("\n Scrapting data for :", youtube_page,"\n")
             video_posted_in_48h=0
 
             while video_posted_in_48h >= 0:
@@ -115,9 +161,6 @@ def lambda_handler(event, context):
                     video_posted_in_48h=len(driver.find_elements(By.XPATH,'//*[contains(text(),"1 day")]'))
                 except:
                     video_posted_in_48h=0
-                
-                print("Videos posted in 24hours", video_posted_in_24h)
-                print("Videos posted in 48hours", video_posted_in_48h)
 
                 if len(driver.find_elements(By.XPATH,'//*[contains(text(),"2 day")]')) > 0:
                     break
@@ -143,36 +186,15 @@ def lambda_handler(event, context):
                 print(video_title, video_views, video_posted)
                 writer.writerow(youtube_dict.values())
             
-            upload_file_to_s3(file_name_with_dir, "9-bucket", file_name)
+            upload_file_to_s3(file_name_with_dir, "9-bucket", file_name,s3_mock_status)
                 
         driver.close()
         # close the driver
 
-    def upload_file_to_s3(local_filename, s3_bucket_name, s3_filename):
-        
-        s3 = boto3.client('s3')
-
-        '''
-        Function is meant to upload locally downloaded files to s3 bucket.
-        # Reference
-        # https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11
-        # https://stackoverflow.com/questions/34303775/complete-a-multipart-upload-with-boto3
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html
-        '''
-
-        try:
-            print("Uploading file: {}".format(local_filename))
-
-            tc = boto3.s3.transfer.TransferConfig()
-            t = boto3.s3.transfer.S3Transfer(client=s3, config=tc)
-
-            t.upload_file(local_filename, s3_bucket_name, s3_filename)
-
-        except Exception as fileUploadtoS3error:
-            print("Error uploading: {}".format(fileUploadtoS3error))
-
+    # ---------------------------------- Web scrapping done for above links -------------------------------
     
     def print_data():
+        
         '''
         This function can be used to get a list of items in current working directory
         # Debugging function, not called within script.
@@ -181,9 +203,13 @@ def lambda_handler(event, context):
         get_list = os.listdir()
         for file in get_list:
             print(file)
+
     
-    initiale_data("channel_list.json")
+    initiliaze_data("channel_list.json")
     initialize_driver()
-    scrapper()
+    yt_channel_scrapper(url_dict_data, True)
     #print_data()
+    return {
+        print("Lambda Ends here")
+    }
 
