@@ -210,6 +210,6 @@ def lambda_handler(event, context):
     yt_channel_scrapper(url_dict_data, True)
     #print_data()
     return {
-        print("Lambda Ends here")
+        "Lambda Ends here"
     }
 
