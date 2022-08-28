@@ -1,5 +1,5 @@
 {
-  "indiatv": {
+  "IndiaTV": {
     "link": "https://www.youtube.com/c/IndiaTV/videos"
   },
   "ndtv": {
@@ -7,5 +7,17 @@
   },
   "abp": {
     "link": "https://www.youtube.com/c/abpnews/videos"
+  },
+  "aajtak": {
+    "link": "https://www.youtube.com/c/aajtak/videos"
+  },
+  "tnow": {
+    "link": "https://www.youtube.com/c/timesnownavbharat/videos"
+  },
+  "news18India": {
+    "link": "https://www.youtube.com/c/news18India/videos"
+  },
+  "RepublicTVBharat": {
+    "link": "https://www.youtube.com/c/RepublicTVBharat/videos"
   }
 }

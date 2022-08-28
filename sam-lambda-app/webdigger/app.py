@@ -209,7 +209,8 @@ def lambda_handler(event, context):
     initialize_driver()
     yt_channel_scrapper(url_dict_data, True)
     #print_data()
-    return {
-        "Lambda Ends here"
+    return { 
+        "status": 200,
+        "msg": "Lambda ends here..."
     }
 
