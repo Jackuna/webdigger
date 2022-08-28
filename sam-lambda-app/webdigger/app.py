@@ -1,9 +1,11 @@
+from asyncio import events
 from selenium.webdriver import Chrome
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+from datetime import datetime
 import time
 import json
 import os
@@ -15,50 +17,62 @@ import boto3
 # Credits -  https://www.youtube.com/watch?v=Xajg_kvdA0c&list=PLC5qe4rQ-j1h-DktBYkeJto7rsEZAfTMl
 
 def lambda_handler(event, context):
-    # ----------------------------------web driver setup---------------------------------------------------
-    # path to chromedriver. while testing locally, 'var/task/' is the temporary path where files and dependencies of the function are mounted.
-    # 'var/task/' path stays the same for files and dependencies in aws lambda environment, when you upload the function as a zip file.
-    driver_path = '/var/task/chromedriver'
     
-    # path to headless-chromium
-    binary_path = '/var/task/headless-chromium'
+    def initialize_driver():
 
-    # we'll use an instance of Options to specify certain things, while initializing the driver
-    # https://www.selenium.dev/selenium/docs/api/rb/Selenium/WebDriver/Chrome/Options.html
-    options = Options()
+        global driver
 
-    # location(path) of headless-chromium binary file
-    options.binary_location = binary_path
+        # ----------------------------------web driver setup---------------------------------------------------
+        # path to chromedriver. while testing locally, 'var/task/' is the temporary path where files and dependencies of the function are mounted.
+        # 'var/task/' path stays the same for files and dependencies in aws lambda environment, when you upload the function as a zip file.
+        driver_path = '/var/task/chromedriver'
+        
+        # path to headless-chromium
+        binary_path = '/var/task/headless-chromium'
 
-    # will start chromium in headless-mode
-    options.add_argument('--headless')
+        # we'll use an instance of Options to specify certain things, while initializing the driver
+        # https://www.selenium.dev/selenium/docs/api/rb/Selenium/WebDriver/Chrome/Options.html
+        options = Options()
 
-    # below argument is for testing only;not recommended to be used in production.
-    # https://chromium.googlesource.com/chromium/src/+/HEAD/docs/linux/sandboxing.md
-    options.add_argument('--no-sandbox')
+        # location(path) of headless-chromium binary file
+        options.binary_location = binary_path
 
-    # not using the below argument can limit resources.
-    # https://www.semicolonandsons.com/code_diary/unix/what-is-the-usecase-of-dev-shm
-    options.add_argument('--disable-dev-shm-usage')
+        # will start chromium in headless-mode
+        options.add_argument('--headless')
 
-    # "unable to discover open window in chrome" error pops up if u dont add the below argument
-    # https://www.techbout.com/disable-multiple-chrome-processes-in-windows-10-26897/
-    options.add_argument('--single-process')
+        # below argument is for testing only;not recommended to be used in production.
+        # https://chromium.googlesource.com/chromium/src/+/HEAD/docs/linux/sandboxing.md
+        options.add_argument('--no-sandbox')
 
-    # initialize the driver
-    driver = Chrome(executable_path=driver_path, options=options)
+        # not using the below argument can limit resources.
+        # https://www.semicolonandsons.com/code_diary/unix/what-is-the-usecase-of-dev-shm
+        options.add_argument('--disable-dev-shm-usage')
 
-    print("driver initialized successfully..")
+        # "unable to discover open window in chrome" error pops up if u dont add the below argument
+        # https://www.techbout.com/disable-multiple-chrome-processes-in-windows-10-26897/
+        options.add_argument('--single-process')
+
+        # initialize the driver
+        driver = Chrome(executable_path=driver_path, options=options)
+
+        print("driver initialized successfully..")
 
     # ----------------------------------web driver setup done----------------------------------------------------
 
+        return driver
 
-    def load_chanel_list(filename):
+    def initiale_data(filename):
+
         global channel_data
-        global driver_dir
+        global data_dir
+        global today
 
-        driver_dir="/tmp/data/"
-        os.mkdir("/tmp/data")
+        dt = datetime.now()
+        today = dt.strftime('%m%d%y')
+        print(len(event.keys()))
+        data_dir="/tmp/data/"
+
+        os.mkdir(data_dir)
 
         with open(filename, "r") as f:
             channel_data = json.load(f)
@@ -66,11 +80,16 @@ def lambda_handler(event, context):
 
     def scrapper():
 
+
         
         for val in channel_data.keys():
 
-            youtube_pages = channel_data[val]['link']
-            csv_file = open(driver_dir+channel_data[val]['fname'], 'w', encoding="utf-8", newline="")
+            youtube_page = channel_data[val]['link']
+            channel_name = channel_data[val]['link'].split('/')[4].lower()
+            file_name = "report_{}_{}_data.csv".format(today,channel_name)
+            file_name_with_dir = "{}{}".format(data_dir,file_name)
+
+            csv_file = open(file_name_with_dir, 'w', encoding="utf-8", newline="")
             writer = csv.writer(csv_file)
 
 
@@ -78,10 +97,10 @@ def lambda_handler(event, context):
             writer.writerow(
                 ['video_title', 'no_of_views', 'time_uploaded'])
 
-            driver.get(youtube_pages)
+            driver.get(youtube_page)
             time.sleep(2)
 
-            print("Scrapting data for :", youtube_pages)
+            print("Scrapting data for :", youtube_page)
             video_posted_in_48h=0
 
             while video_posted_in_48h >= 0:
@@ -123,6 +142,8 @@ def lambda_handler(event, context):
 
                 print(video_title, video_views, video_posted)
                 writer.writerow(youtube_dict.values())
+            
+            upload_file_to_s3(file_name_with_dir, "9-bucket", file_name)
                 
         driver.close()
         # close the driver
@@ -156,13 +177,13 @@ def lambda_handler(event, context):
         This function can be used to get a list of items in current working directory
         # Debugging function, not called within script.
         '''
-        os.chdir(driver_dir)
+        os.chdir(data_dir)
         get_list = os.listdir()
         for file in get_list:
             print(file)
-            upload_file_to_s3(file, "9-bucket", file)
     
-    load_chanel_list("channel_list.json")
+    initiale_data("channel_list.json")
+    initialize_driver()
     scrapper()
-    print_data()
+    #print_data()
 

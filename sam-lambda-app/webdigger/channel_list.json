@@ -1,6 +1,11 @@
 {
-  "IndiaTV": {
-    "link": "https://www.youtube.com/c/IndiaTV/videos",
-    "fname": "IndiaTV_channel_data.csv"
+  "indiatv": {
+    "link": "https://www.youtube.com/c/IndiaTV/videos"
+  },
+  "ndtv": {
+    "link": "https://www.youtube.com/user/ndtvindia/videos"
+  },
+  "abp": {
+    "link": "https://www.youtube.com/c/abpnews/videos"
   }
 }
