@@ -186,7 +186,7 @@ def lambda_handler(event, context):
                 print(video_title, video_views, video_posted)
                 writer.writerow(youtube_dict.values())
             
-            upload_file_to_s3(file_name_with_dir, "9-bucket", file_name,s3_mock_status)
+            upload_file_to_s3(file_name_with_dir, "ck-webdigger-app-data", file_name,s3_mock_status)
                 
         driver.close()
         # close the driver
@@ -207,7 +207,7 @@ def lambda_handler(event, context):
     
     initiliaze_data("channel_list.json")
     initialize_driver()
-    yt_channel_scrapper(url_dict_data, True)
+    yt_channel_scrapper(url_dict_data, False)
     #print_data()
     return { 
         "status": 200,
