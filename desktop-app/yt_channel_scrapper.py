@@ -21,9 +21,46 @@ def load_chanel_list(filename):
     with open(filename, "r") as f:
         channel_data = json.load(f)
         return channel_data
-    
-def validateChromeDriver(webdriver_location):
-    
+
+
+def downloadChromeDriver():
+
+    latest_chrome_driver_link = "{}LATEST_RELEASE".format(chrome_driver_repository)
+
+    latest_chrome_driver_version = urllib.request.urlopen(latest_chrome_driver_link).read().decode('utf-8')
+    latest_chrome_driver_downlodable_link = "{}{}/{}".format(chrome_driver_repository,
+                                                                latest_chrome_driver_version,
+                                                                chrome_driver_win_binary_zip)
+
+    print ("No Chromedriver found, downloading latest driver.. hope that fits with browser version.")
+
+    try:
+        if os.path.exists(chrome_driver_win_binary_zip):
+            os.remove(chrome_driver_win_binary_zip)
+        else:
+            print("Thankfully no Old Zip Found, downloading new chrome diver binary zip now..")
+        
+        wget.download(latest_chrome_driver_downlodable_link)
+        
+        try:
+            with ZipFile("chromedriver_win32.zip","r") as zip_ref:
+                zip_ref.extractall(driver_dir)   
+        except:
+            print("error extracting zip package") 
+    except:
+        print("Error fetcing URL")
+
+
+def validateChromeDriver():
+
+    global chrome_driver_repository
+    global chrome_driver_win_binary_zip
+    chrome_driver_repository = "https://chromedriver.storage.googleapis.com/"
+    chrome_driver_win_binary_zip = "chromedriver_win32.zip"
+
+    if "chromedriver.exe" not in os.listdir():
+        downloadChromeDriver()
+
     chrome_binary_version = {}
     try:
         Webdriver = Service(webdriver_location)
@@ -33,7 +70,6 @@ def validateChromeDriver(webdriver_location):
         chrome_binary_version.update({"browser_version": driver.capabilities['browserVersion'].split(".")[0]} )
         chrome_binary_version.update({"driver_version": driver.capabilities['chrome']['chromedriverVersion'].split(' ')[0].split(".")[0]} )
         
-    # open chrome 
     except SessionNotCreatedException as error:
         chrome_binary_version.update({"driver_version": error.msg.split()[11]})
         chrome_binary_version.update({"browser_version": error.msg.split()[16].split(".")[0]})
@@ -50,7 +86,10 @@ def validateChromeDriver(webdriver_location):
     return chrome_binary_version
 
 
-def initDriverSession(webdriver_location):
+def initDriverSession():
+
+    
+
     try:
         Webdriver = Service(webdriver_location)
         driv_options = Options()
@@ -61,14 +100,16 @@ def initDriverSession(webdriver_location):
     return driver
 
 
-def downloadChromeDriver():
+def updateChromeDriver():
+
     global driver_dir
-    global driver_full_path
+    global webdriver_location
+
+    driver_dir = os.getcwd()
+    webdriver_location = driver_dir+"\\chromedriver.exe"
  
     try:
-        driver_dir = os.getcwd()
-        driver_full_path = driver_dir+"\\chromedriver.exe"
-        installed_version = validateChromeDriver(driver_full_path)
+        installed_version = validateChromeDriver()
 
         if installed_version['update_required'] == "true":        
             browser_version = installed_version['browser_version']
@@ -80,7 +121,15 @@ def downloadChromeDriver():
                 get_driver_version_for_url_2 = browser_request_1.read().decode('utf-8')
                 construct_download_url_step_2 = "https://chromedriver.storage.googleapis.com/"+get_driver_version_for_url_2+"/chromedriver_win32.zip"
                 print("downloading from :", construct_download_url_step_2)
+
+                if os.path.exists(chrome_driver_win_binary_zip):
+                    os.remove(chrome_driver_win_binary_zip)
+
+                else:
+                    print("Thankfully no Old Zip Found, downloading new chrome diver binary zip now..")
+
                 wget.download(construct_download_url_step_2)
+
                 try:
                     with ZipFile("chromedriver_win32.zip","r") as zip_ref:
                         zip_ref.extractall(driver_dir)   
@@ -97,7 +146,7 @@ def downloadChromeDriver():
 
 def scrapper():
 
-    driver = initDriverSession(driver_full_path)
+    driver = initDriverSession()
     for val in channel_data.keys():
 
         youtube_pages = channel_data[val]['link']
@@ -159,5 +208,5 @@ def scrapper():
         
 
 load_chanel_list("channel_list.json")
-downloadChromeDriver()
+updateChromeDriver()
 scrapper()
