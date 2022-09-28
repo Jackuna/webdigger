@@ -121,7 +121,7 @@ def lambda_handler(event, context):
     # ---------------------------------- upload_file_to_s3 function ends here ---------------------------------------
 
 
-    def yt_channel_scrapper(channel_url, s3_mock_status):
+    def yt_channel_scrapper(channel_url, scrap_post_limit, s3_mock_status):
 
         '''
         Scrap the youtube channel video posts titles and uploads it into s3 bucket.
@@ -161,7 +161,11 @@ def lambda_handler(event, context):
                     video_posted_in_48h=len(driver.find_elements(By.XPATH,'//*[contains(text(),"1 day")]'))
                 except:
                     video_posted_in_48h=0
-
+                
+                if video_posted_in_48h >= scrap_post_limit:
+                    print ("Scrap daata limit reached, set to write data for post count", scrap_post_limit)  )
+                    break
+                    
                 if len(driver.find_elements(By.XPATH,'//*[contains(text(),"2 day")]')) > 0:
                     break
 
@@ -207,7 +211,7 @@ def lambda_handler(event, context):
     
     initiliaze_data("channel_list.json")
     initialize_driver()
-    yt_channel_scrapper(url_dict_data, False)
+    yt_channel_scrapper(url_dict_data, 101, False)
     #print_data()
     return { 
         "status": 200,
