@@ -163,7 +163,7 @@ def lambda_handler(event, context):
                     video_posted_in_48h=0
                 
                 if video_posted_in_48h >= scrap_post_limit:
-                    print ("Scrap daata limit reached, set to write data for post count", scrap_post_limit)  )
+                    print ("Scrap daata limit reached, set to write data for post count", scrap_post_limit)
                     break
                     
                 if len(driver.find_elements(By.XPATH,'//*[contains(text(),"2 day")]')) > 0:
