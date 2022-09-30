@@ -45,26 +45,20 @@ def load_chanel_list(filename):
         channel_data = json.load(f)
         return channel_data
 
+    
 
-def downloadChromeDriver():
+def downloadChromeDriver(chrome_driver_version):
 
-    latest_chrome_driver_link = "{}LATEST_RELEASE".format(chrome_driver_repository)
-
-    latest_chrome_driver_version = urllib.request.urlopen(latest_chrome_driver_link).read().decode('utf-8')
-
-    latest_chrome_driver_downlodable_link = "{}{}/{}".format(chrome_driver_repository,
-                                                                latest_chrome_driver_version,
+    chrome_driver_downlodable_link = "{}{}/{}".format(chrome_driver_repository,
+                                                                chrome_driver_version,
                                                                 chrome_driver_win_binary_zip)
-
-    print ("No Chromedriver found, downloading latest driver.. hope that fits with browser version.")
-
     try:
         if os.path.exists(chrome_driver_win_binary_zip):
             os.remove(chrome_driver_win_binary_zip)
         else:
             print("Thankfuly no Old Zip Found, downloading new chrome driver binary zip now..")
         
-        wget.download(latest_chrome_driver_downlodable_link)
+        wget.download(chrome_driver_downlodable_link)
         
         try:
             with ZipFile(chrome_driver_win_binary_zip,"r") as zip_ref:
@@ -72,38 +66,69 @@ def downloadChromeDriver():
         except:
             print("error extracting zip package") 
     except:
-        print("Error fetcing URL")
+        print("Error reported while downloading chrome driver")
+
+    
+
+def downloadLatestChromeDriver():
+
+    latest_chrome_driver_link = "{}LATEST_RELEASE".format(chrome_driver_repository)
+    latest_chrome_driver_version = urllib.request.urlopen(latest_chrome_driver_link).read().decode('utf-8')
+
+    downloadChromeDriver(latest_chrome_driver_version)
 
 
-def validateChromeDriver():
 
-    if  chrome_driver_win_binary not in os.listdir():
-        downloadChromeDriver()
+def getChromeBinaryVersions():
 
-    chrome_binary_version = {}
+    chrome_binary_versions = {}
     try:
         Webdriver = Service(webdriver_location)
         driv_options = Options()
         driv_options.headless = True
         driver = webdriver.Chrome(service=Webdriver, options=driv_options)
-        chrome_binary_version.update({"browser_version": driver.capabilities['browserVersion'].split(".")[0]} )
-        chrome_binary_version.update({"driver_version": driver.capabilities['chrome']['chromedriverVersion'].split(' ')[0].split(".")[0]} )
+        chrome_binary_versions.update({"browser_version": driver.capabilities['browserVersion'].split(".")[0]} )
+        chrome_binary_versions.update({"driver_version": driver.capabilities['chrome']['chromedriverVersion'].split(' ')[0].split(".")[0]} )
         
     except SessionNotCreatedException as error:
-        chrome_binary_version.update({"driver_version": error.msg.split()[11]})
-        chrome_binary_version.update({"browser_version": error.msg.split()[16].split(".")[0]})
+        chrome_binary_versions.update({"driver_version": error.msg.split()[11]})
+        chrome_binary_versions.update({"browser_version": error.msg.split()[16].split(".")[0]})
 
     try:
-        if chrome_binary_version['driver_version'] != chrome_binary_version['browser_version']:
-            print("Incompaitable chmore driver/browser version", chrome_binary_version)
-            chrome_binary_version.update({"update_required": "true"})
+        if chrome_binary_versions['driver_version'] != chrome_binary_versions['browser_version']:
+            print("Incompaitable chmore driver/browser version", chrome_binary_versions)
+            chrome_binary_versions.update({"update_required": "true"})
         else:
-            chrome_binary_version.update({"update_required": "false"})
+            chrome_binary_versions.update({"update_required": "false"})
     except:
         pass        
     
-    return chrome_binary_version
+    return chrome_binary_versions
 
+
+def validateChromeDriver():
+
+    if  chrome_driver_win_binary not in os.listdir():
+        downloadLatestChromeDriver()
+    
+    try:
+        installed_version = getChromeBinaryVersions()
+
+        if installed_version['update_required'] == "true":        
+            browser_version = installed_version['browser_version']
+            get_driver_version_for_url_1 = re.search('\w*.\w*.\w*', browser_version)[0]
+            construct_download_url_step_1 = "{}LATEST_RELEASE_{}".format(chrome_driver_repository, 
+                                                                            get_driver_version_for_url_1)
+
+            browser_request_1 = urllib.request.urlopen(construct_download_url_step_1)
+            get_driver_version_for_url_2 = browser_request_1.read().decode('utf-8')
+
+            downloadChromeDriver(get_driver_version_for_url_2)
+        else:
+            print("Chrome driver Versions already updated, no need to update.")
+    except:
+        print("Something went wromg while validating chrome driver")
+    
 
 def initDriverSession():
 
@@ -115,49 +140,6 @@ def initDriverSession():
     except Exception as error:
         print(error)
     return driver
-
-
-
-def updateChromeDriver():
-
-    try:
-        installed_version = validateChromeDriver()
-
-        if installed_version['update_required'] == "true":        
-            browser_version = installed_version['browser_version']
-            get_driver_version_for_url_1 = re.search('\w*.\w*.\w*', browser_version)[0]
-            construct_download_url_step_1 = "{}LATEST_RELEASE_{}".format(chrome_driver_repository, 
-                                                                            get_driver_version_for_url_1)
-            try:
-
-                browser_request_1 = urllib.request.urlopen(construct_download_url_step_1)
-                get_driver_version_for_url_2 = browser_request_1.read().decode('utf-8')
-
-                construct_download_url_step_2 = "{}{}/{}".format(chrome_driver_repository,
-                                                                    get_driver_version_for_url_2, 
-                                                                    chrome_driver_win_binary_zip )
-                print("downloading from :", construct_download_url_step_2)
-
-                if os.path.exists(chrome_driver_win_binary_zip):
-                    os.remove(chrome_driver_win_binary_zip)
-
-                else:
-                    print("Thankfully no Old Zip Found, downloading new chrome diver binary zip now..")
-
-                wget.download(construct_download_url_step_2)
-
-                try:
-                    with ZipFile(chrome_driver_win_binary_zip,"r") as zip_ref:
-                        zip_ref.extractall(driver_dir)   
-                except:
-                    print("error extracting zip package")
-            except:
-                print("Error fetcing URL")
-        else:
-            print("Chrome driver Versions already updated, no need to update.")
-
-    except:
-        pass
 
 
 def yt_channel_scrapper():
@@ -226,8 +208,13 @@ def yt_channel_scrapper():
             writer.writerow(youtube_dict.values())
     
     driver.close()
-        
-load_variables()
-load_chanel_list("channel_list.json")
-updateChromeDriver()
-yt_channel_scrapper()
+
+def main():
+    load_variables()
+    load_chanel_list("channel_list.json")
+    validateChromeDriver()
+    yt_channel_scrapper()
+
+
+if __name__ == "__main__":
+    main()
