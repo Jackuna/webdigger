@@ -39,11 +39,11 @@ def load_variables():
 
 def load_chanel_list(filename):
     
-    global channel_data
+    global channel_urls
 
     with open(filename, "r") as f:
-        channel_data = json.load(f)
-        return channel_data
+        channel_urls = json.load(f)
+        return channel_urls
 
     
 
@@ -72,9 +72,10 @@ def downloadChromeDriver(chrome_driver_version):
 
 def downloadLatestChromeDriver():
 
+    print("No Chromedriver binary found in system, downloading latest one..\n")
+
     latest_chrome_driver_link = "{}LATEST_RELEASE".format(chrome_driver_repository)
     latest_chrome_driver_version = urllib.request.urlopen(latest_chrome_driver_link).read().decode('utf-8')
-
     downloadChromeDriver(latest_chrome_driver_version)
 
 
@@ -87,8 +88,10 @@ def getChromeBinaryVersions():
         driv_options = Options()
         driv_options.headless = True
         driver = webdriver.Chrome(service=Webdriver, options=driv_options)
-        chrome_binary_versions.update({"browser_version": driver.capabilities['browserVersion'].split(".")[0]} )
-        chrome_binary_versions.update({"driver_version": driver.capabilities['chrome']['chromedriverVersion'].split(' ')[0].split(".")[0]} )
+        chrome_binary_versions.update(
+                                        {"browser_version": driver.capabilities['browserVersion'].split(".")[0]} )
+        chrome_binary_versions.update(
+                                        {"driver_version": driver.capabilities['chrome']['chromedriverVersion'].split(' ')[0].split(".")[0]} )
         
     except SessionNotCreatedException as error:
         chrome_binary_versions.update({"driver_version": error.msg.split()[11]})
@@ -142,14 +145,23 @@ def initDriverSession():
     return driver
 
 
-def yt_channel_scrapper():
+def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_date_age ):
 
     driver = initDriverSession()
-    
-    for val in channel_data.keys():
 
-        youtube_pages = channel_data[val]['link']
-        channel_name = channel_data[val]['link'].split('/')[4].lower()
+    post_age_mappings = {
+                            "1": {
+                                "age_hours": 48
+                            },
+                            "2": {
+                                "age_hours": 72
+                            }
+                        }
+    
+    for val in channel_urls.keys():
+
+        youtube_pages = channel_urls[val]['link']
+        channel_name = channel_urls[val]['link'].split('/')[4].lower()
         file_name = "report_{}_{}_data.csv".format(today,channel_name)
         file_name_with_dir = "{}//{}".format(data_dir,file_name)
 
@@ -164,36 +176,33 @@ def yt_channel_scrapper():
         driver.get(youtube_pages)
         time.sleep(2)
 
-        print("Scrapting data for :", youtube_pages)
-        video_posted_in_48h=0
+        print("\n Scrapting data for :", youtube_pages)
+        video_posted_in_requested_age=0
 
-        while video_posted_in_48h >= 0:
+        while video_posted_in_requested_age >= 0:
             driver.execute_script("window.scrollTo(0,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.documentElement.clientHeight))")
             time.sleep(1)
-            try:
-                video_posted_in_24h=len(driver.find_elements(By.XPATH,'//*[contains(text(),"hour")]'))
 
-            except:
-                video_posted_in_24h=0
-            try:
-                video_posted_in_48h=len(driver.find_elements(By.XPATH,'//*[contains(text(),"1 day")]'))
-            except:
-                video_posted_in_48h=0
-            
-            print("Videos posted in 24hours", video_posted_in_24h)
-            print("Videos posted in 48hours", video_posted_in_48h)
+            construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_date_age)
+            construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_date_age+1)
 
-            if len(driver.find_elements(By.XPATH,'//*[contains(text(),"2 day")]')) > 0:
+            try:
+                video_posted_in_requested_age=len(driver.find_elements(By.XPATH,construct_xpath_string_start))
+            except:
+                video_posted_in_requested_age=0
+        
+            if len(driver.find_elements(By.XPATH,construct_xpath_string_end)) > 0:
                 break
 
-        print("Total Videos in last 48 hours :", video_posted_in_48h)
+        print("Total video posted by {} day ago : {} \n".format(scrap_post_date_age, video_posted_in_requested_age))
+
 
         yt_title=[]
         yt_views=[]
         yt_posted=[]
         youtube_dict = {}
 
-        for count in range(0,video_posted_in_48h):
+        for count in range(0,video_posted_in_requested_age):
             video_title=driver.find_elements(By.ID, 'video-title')[count].text
             video_views=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[1]')[count].text.rstrip('views')
             video_posted=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[2]')[count].text
@@ -213,7 +222,7 @@ def main():
     load_variables()
     load_chanel_list("channel_list.json")
     validateChromeDriver()
-    yt_channel_scrapper()
+    yt_channel_scrapper(channel_urls,101,2)
 
 
 if __name__ == "__main__":
