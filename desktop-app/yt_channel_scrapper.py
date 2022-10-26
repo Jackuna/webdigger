@@ -145,18 +145,10 @@ def initDriverSession():
     return driver
 
 
-def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_date_age ):
+def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_day_age ):
 
     driver = initDriverSession()
 
-    post_age_mappings = {
-                            "1": {
-                                "age_hours": 48
-                            },
-                            "2": {
-                                "age_hours": 72
-                            }
-                        }
     
     for val in channel_urls.keys():
 
@@ -183,8 +175,8 @@ def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_date_a
             driver.execute_script("window.scrollTo(0,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.documentElement.clientHeight))")
             time.sleep(1)
 
-            construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_date_age)
-            construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_date_age+1)
+            construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age)
+            construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age+1)
 
             try:
                 video_posted_in_requested_age=len(driver.find_elements(By.XPATH,construct_xpath_string_start))
@@ -194,24 +186,32 @@ def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_date_a
             if len(driver.find_elements(By.XPATH,construct_xpath_string_end)) > 0:
                 break
 
-        print("Total video posted by {} day ago : {} \n".format(scrap_post_date_age, video_posted_in_requested_age))
+        
+
+        total_post_to_write = len(driver.find_elements(By.ID, 'video-title'))
+        print("Total video posted by {} day ago : {} \n".format(scrap_post_day_age, total_post_to_write))
 
 
         yt_title=[]
         yt_views=[]
         yt_posted=[]
         youtube_dict = {}
-
-        for count in range(0,video_posted_in_requested_age):
+        new_count = 0
+        for count in range(0,total_post_to_write):
+            
             video_title=driver.find_elements(By.ID, 'video-title')[count].text
-            video_views=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[1]')[count].text.rstrip('views')
-            video_posted=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[2]')[count].text
-            #time.sleep(1)
-            yt_title.append(video_views)
+            video_views=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[1]')[count].text
 
             youtube_dict['yt_title'] = video_title
             youtube_dict['yt_views'] = video_views
-            youtube_dict['yt_posted'] = video_posted
+
+            if video_views.split()[1] == "watching":
+                youtube_dict['yt_posted'] = "Stream ongoing.."
+                new_count = count - 1 
+            else:
+                video_posted=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[2]')[new_count].text
+                youtube_dict['yt_posted'] = video_posted
+
 
             print(video_title, video_views, video_posted)
             writer.writerow(youtube_dict.values())
@@ -222,7 +222,7 @@ def main():
     load_variables()
     load_chanel_list("channel_list.json")
     validateChromeDriver()
-    yt_channel_scrapper(channel_urls,101,2)
+    yt_channel_scrapper(channel_urls,101,1)
 
 
 if __name__ == "__main__":
