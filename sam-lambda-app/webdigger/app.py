@@ -214,7 +214,7 @@ def lambda_handler(event, context):
 
     def main():
         initiliaze_data("channel_list.json")
-        yt_channel_scrapper(url_dict_data, 101, True, 1)
+        yt_channel_scrapper(url_dict_data, 101, False, 1)
 
     
     main()
