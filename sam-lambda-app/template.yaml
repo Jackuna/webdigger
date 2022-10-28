@@ -21,3 +21,6 @@ Resources:
       Architectures:
         - x86_64
       MemorySize: 1024
+      Environment:
+        Variables:
+          s3MockOption: disabled

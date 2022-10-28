@@ -74,7 +74,9 @@ def lambda_handler(event, context):
         global url_dict_data
         global data_dir
         global today
+        global s3_mock_check
 
+        s3_mock_check = os.environ['s3MockOption']
         dt = datetime.now()
         today = dt.strftime('%m%d%y')
         print(len(event.keys()))
@@ -100,7 +102,7 @@ def lambda_handler(event, context):
         # https://stackoverflow.com/questions/34303775/complete-a-multipart-upload-with-boto3
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html
         '''
-        if mock==False:
+        if mock == "disabled":
             try:
                 print("Uploading file: {}".format(local_filename))
 
@@ -112,7 +114,7 @@ def lambda_handler(event, context):
             except Exception as fileUploadtoS3error:
                 print("Error uploading: {}".format(fileUploadtoS3error))
         else:
-            print("Uploading file: {}".format(local_filename))
+            print("Uploading file to dummy s3: {}".format(local_filename))
 
     # ---------------------------------- upload_file_to_s3 function ends here ---------------------------------------
 
@@ -222,7 +224,7 @@ def lambda_handler(event, context):
 
     def main():
         initiliaze_data("channel_list.json")
-        yt_channel_scrapper(url_dict_data, 101, True, 24)
+        yt_channel_scrapper(url_dict_data, 101, s3_mock_check, 24)
 
     
     main()
