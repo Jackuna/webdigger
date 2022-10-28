@@ -152,8 +152,14 @@ def lambda_handler(event, context):
                 driver.execute_script("window.scrollTo(0,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.documentElement.clientHeight))")
                 time.sleep(1)
 
-                construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age)
-                construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age+1)
+                if scrap_post_day_age == 24:
+                    construct_xpath_string_start = '//*[contains(text(),"hour")]'
+                    construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format('1')
+                    day_or_hour = "hour"
+                else:
+                    construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age)
+                    construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age+1)
+                    day_or_hour = "day"
 
                 try:
                     video_posted_in_requested_age=len(driver.find_elements(By.XPATH,construct_xpath_string_start))
@@ -165,13 +171,13 @@ def lambda_handler(event, context):
 
 
             total_post_to_write = len(driver.find_elements(By.ID, 'video-title'))
-            print("Total video posted by {} day ago : {} \n".format(scrap_post_day_age, total_post_to_write))
+            print("Total video posted by {} {} : {} \n".format(scrap_post_day_age, day_or_hour, total_post_to_write))
 
             yt_title=[]
             yt_views=[]
             yt_posted=[]
             youtube_dict = {}
-            new_count = 0
+            negative_counter = 0
 
             for count in range(0,total_post_to_write):
             
@@ -182,9 +188,11 @@ def lambda_handler(event, context):
                 youtube_dict['yt_views'] = video_views
 
                 if video_views.split()[1] == "watching":
-                    youtube_dict['yt_posted'] = "Stream ongoing.."
-                    new_count = count - 1 
+                    video_posted = "Stream ongoing.."
+                    youtube_dict['yt_posted'] = video_posted
+                    negative_counter = negative_counter + 1
                 else:
+                    new_count = count - negative_counter
                     video_posted=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[2]')[new_count].text
                     youtube_dict['yt_posted'] = video_posted
 
@@ -214,7 +222,7 @@ def lambda_handler(event, context):
 
     def main():
         initiliaze_data("channel_list.json")
-        yt_channel_scrapper(url_dict_data, 101, False, 1)
+        yt_channel_scrapper(url_dict_data, 101, True, 24)
 
     
     main()

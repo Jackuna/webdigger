@@ -138,7 +138,7 @@ def initDriverSession():
     try:
         Webdriver = Service(webdriver_location)
         driv_options = Options()
-        driv_options.headless = True
+        driv_options.headless = False
         driver = webdriver.Chrome(service=Webdriver, options=driv_options)
     except Exception as error:
         print(error)
@@ -175,8 +175,14 @@ def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_day_ag
             driver.execute_script("window.scrollTo(0,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.documentElement.clientHeight))")
             time.sleep(1)
 
-            construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age)
-            construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age+1)
+            if scrap_post_day_age == 24:
+                construct_xpath_string_start = '//*[contains(text(),"hour")]'
+                construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format('1')
+                day_or_hour = "hour"
+            else:
+                construct_xpath_string_start = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age)
+                construct_xpath_string_end = '//*[contains(text(),"{} day")]'.format(scrap_post_day_age+1)
+                day_or_hour = "day"
 
             try:
                 video_posted_in_requested_age=len(driver.find_elements(By.XPATH,construct_xpath_string_start))
@@ -189,14 +195,14 @@ def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_day_ag
         
 
         total_post_to_write = len(driver.find_elements(By.ID, 'video-title'))
-        print("Total video posted by {} day ago : {} \n".format(scrap_post_day_age, total_post_to_write))
+        print("Total video posted by {} {} : {} \n".format(scrap_post_day_age, day_or_hour, total_post_to_write))
 
 
         yt_title=[]
         yt_views=[]
         yt_posted=[]
         youtube_dict = {}
-        new_count = 0
+        negative_counter = 0
         for count in range(0,total_post_to_write):
             
             video_title=driver.find_elements(By.ID, 'video-title')[count].text
@@ -206,9 +212,11 @@ def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_day_ag
             youtube_dict['yt_views'] = video_views
 
             if video_views.split()[1] == "watching":
-                youtube_dict['yt_posted'] = "Stream ongoing.."
-                new_count = count - 1 
+                video_posted = "Stream ongoing.."
+                youtube_dict['yt_posted'] = video_posted
+                negative_counter = negative_counter + 1
             else:
+                new_count = count - negative_counter
                 video_posted=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[2]')[new_count].text
                 youtube_dict['yt_posted'] = video_posted
 
@@ -222,7 +230,7 @@ def main():
     load_variables()
     load_chanel_list("channel_list.json")
     validateChromeDriver()
-    yt_channel_scrapper(channel_urls,101,1)
+    yt_channel_scrapper(channel_urls,101,24)
 
 
 if __name__ == "__main__":
