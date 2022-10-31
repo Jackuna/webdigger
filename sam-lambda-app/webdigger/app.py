@@ -16,6 +16,9 @@ import boto3
 
 # Credits -  https://www.youtube.com/watch?v=Xajg_kvdA0c&list=PLC5qe4rQ-j1h-DktBYkeJto7rsEZAfTMl
 
+# Issue Tickets Tracker.
+# wd-bug-#2 - bug_to_be_fixed_01
+
 def lambda_handler(event, context):
     
     def initialize_driver():
@@ -181,8 +184,11 @@ def lambda_handler(event, context):
             youtube_dict = {}
             negative_counter = 0
 
-            for count in range(0,total_post_to_write):
-            
+            bug_to_be_fixed_01 = total_post_to_write - 2  # wd-bug-#2
+            for count in range(0,bug_to_be_fixed_01):
+
+                #print("executing details", total_post_to_write, "now running count", count)
+
                 video_title=driver.find_elements(By.ID, 'video-title')[count].text
                 video_views=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[1]')[count].text
 

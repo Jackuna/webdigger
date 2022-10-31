@@ -15,6 +15,8 @@ import wget
 from zipfile import ZipFile
 from datetime import datetime
 
+# Issue Tickets Tracker.
+# wd-bug-#2 - bug_to_be_fixed_01
 
 def load_variables():
 
@@ -139,7 +141,9 @@ def initDriverSession():
         Webdriver = Service(webdriver_location)
         driv_options = Options()
         driv_options.headless = False
+        #driv_options.add_argument("--start-maximized")
         driver = webdriver.Chrome(service=Webdriver, options=driv_options)
+        time.sleep(2)
     except Exception as error:
         print(error)
     return driver
@@ -203,7 +207,9 @@ def yt_channel_scrapper(channel_urls, scrap_posts_count_limit, scrap_post_day_ag
         yt_posted=[]
         youtube_dict = {}
         negative_counter = 0
-        for count in range(0,total_post_to_write):
+        bug_to_be_fixed_01 = total_post_to_write - 2  # wd-bug-#2
+
+        for count in range(0,bug_to_be_fixed_01):
             
             video_title=driver.find_elements(By.ID, 'video-title')[count].text
             video_views=driver.find_elements(By.XPATH, '//*[@id="metadata-line"]/span[1]')[count].text
